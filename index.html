@@ -670,62 +670,55 @@
         // Inicializar quando a página carregar
         document.addEventListener('DOMContentLoaded', init);
 
-    
-/* ===== SISTEMA DE ARMAZENAMENTO LOCAL (localStorage) ===== */
+  // Fallback in-memory Data SDK (agora com armazenamento no navegador)
+if (!window.dataSdk) {
+    (function(){
+        let store = JSON.parse(localStorage.getItem("contasBar")) || [];
+        let handler = null;
 
-const STORAGE_KEY = "contas_bar";
+        function salvar() {
+            localStorage.setItem("contasBar", JSON.stringify(store));
+        }
 
-// Carregar contas ao iniciar
-function loadContas() {
-    try {
-        const data = localStorage.getItem(STORAGE_KEY);
-        return data ? JSON.parse(data) : [];
-    } catch (e) {
-        console.error("Erro ao carregar dados:", e);
-        return [];
-    }
+        window.dataSdk = {
+            init: async (h) => {
+                handler = h || null;
+
+                // Enviar dados armazenados para a interface
+                if (handler && typeof handler.onDataChanged === 'function') {
+                    try { handler.onDataChanged(store); } catch (e) {}
+                }
+                return { isOk: true };
+            },
+            create: async (item) => {
+                store.push(item);
+                salvar();
+                if (handler?.onDataChanged) handler.onDataChanged(store);
+                return { isOk: true };
+            },
+            update: async (item) => {
+                const idx = store.findIndex(s => s.id === item.id);
+                if (idx >= 0) store[idx] = item;
+                else store.push(item);
+                salvar();
+                if (handler?.onDataChanged) handler.onDataChanged(store);
+                return { isOk: true };
+            },
+            delete: async (item) => {
+                const idx = store.findIndex(s => s.id === item.id);
+                if (idx >= 0) store.splice(idx, 1);
+                salvar();
+                if (handler?.onDataChanged) handler.onDataChanged(store);
+                return { isOk: true };
+            }
+        };
+    })();
 }
 
-// Salvar contas
-function saveContas() {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(contas));
-}
-
-// Criar conta
-async function dataCreate(item) {
-    contas.push(item);
-    saveContas();
-    atualizarInterface();
-    return { isOk: true };
-}
-
-// Atualizar conta
-async function dataUpdate(item) {
-    const idx = contas.findIndex(c => c.id === item.id);
-    if (idx >= 0) contas[idx] = item;
-    saveContas();
-    atualizarInterface();
-    return { isOk: true };
-}
-
-// Remover conta
-async function dataDelete(item) {
-    contas = contas.filter(c => c.id !== item.id);
-    saveContas();
-    atualizarInterface();
-    return { isOk: true };
-}
-
-/* === Substitui as funções antigas do dataSdk === */
-window.dataSdk = {
-    init: async () => ({ isOk: true }),
-    create: dataCreate,
-    update: dataUpdate,
-    delete: dataDelete
-};
 
     </script>
   </div>
  <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'99f9bc6677257394',t:'MTc2MzMyNDkxOS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 
 </html>
+
