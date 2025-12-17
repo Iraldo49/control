@@ -14,7 +14,7 @@
       width: 100%;
       display: flex;
       flex-direction: column;
-      padding-bottom: 70px; /* Espaço para o footer fixo */
+      padding-bottom: 70px;
     }
 
     * {
@@ -26,13 +26,13 @@
       flex: 1;
       background: #4a5568;
       padding: 1rem;
-      padding-bottom: 80px; /* Adiciona espaço para o footer fixo */
+      padding-bottom: 80px;
     }
 
     .content-wrapper {
       max-width: 900px;
       margin: 0 auto;
-      padding-bottom: 20px; /* Espaço extra no final do conteúdo */
+      padding-bottom: 20px;
     }
 
     .header {
@@ -351,11 +351,11 @@
       padding: 1rem;
       text-align: center;
       font-size: 0.8rem;
-      position: fixed; /* Fixa na tela */
-      bottom: 0; /* Cola na parte inferior */
+      position: fixed;
+      bottom: 0;
       left: 0;
-      width: 100%; /* Ocupa toda a largura */
-      z-index: 99; /* Fica acima do conteúdo */
+      width: 100%;
+      z-index: 99;
     }
 
     .footer-content {
@@ -506,7 +506,7 @@
 
     .toast {
       position: fixed;
-      bottom: 120px; /* Ajustado para aparecer acima do footer fixo */
+      bottom: 120px;
       right: 20px;
       background: #2d3748;
       color: #ffffff;
@@ -609,16 +609,15 @@
       }
       
       .fab-button {
-        bottom: 100px; /* Ajustado para não sobrepor o footer */
+        bottom: 100px;
         right: 15px;
         width: 50px;
         height: 50px;
         font-size: 20px;
       }
       
-      /* Ajuste para mobile */
       body {
-        padding-bottom: 100px; /* Mais espaço para footer em mobile */
+        padding-bottom: 100px;
       }
       
       .app-container {
@@ -626,7 +625,7 @@
       }
       
       .toast {
-        bottom: 140px; /* Ajuste para mobile */
+        bottom: 140px;
       }
     }
 
@@ -655,7 +654,6 @@
   </style>
  </head>
  <body>
-  <!-- O restante do HTML permanece igual -->
   <div class="app-container">
    <div class="content-wrapper">
     <header class="header">
@@ -726,7 +724,7 @@
             </div>
           </div>
           
-          <!-- NOVO CAMPO: Telefone para SMS -->
+          <!-- CAMPO DE TELEFONE PARA SMS -->
           <div class="form-group">
             <label for="input-telefone">Número de Celular (para SMS)</label>
             <input type="tel" id="input-telefone" placeholder="Ex: +258841234567 (opcional)">
@@ -794,36 +792,205 @@
     </div>
   </div>
 
-  <!-- O JavaScript permanece exatamente igual ao código anterior -->
+  <!-- Modal de Configuração da API Twilio -->
+  <div id="modal-config-twilio" class="modal" style="display: none;">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2>⚙️ Configurar API Twilio</h2>
+        <button class="close-modal" onclick="fecharModal()">×</button>
+      </div>
+      <div class="modal-body">
+        <div style="background: #f7fafc; padding: 1rem; border-radius: 8px; margin-bottom: 1rem;">
+          <p><strong>Status da API:</strong> <span id="api-status" style="color: #48bb78; font-weight: 600;">Configurada ✓</span></p>
+          <p style="font-size: 0.875rem; color: #718096; margin: 0.5rem 0;">Credenciais configuradas com sucesso!</p>
+        </div>
+        
+        <div class="form-group">
+          <label for="input-twilio-account-sid">Account SID</label>
+          <input type="text" id="input-twilio-account-sid" value="ACc39e5da2c6614d474a81d752a0207645" readonly style="background: #f7fafc;">
+        </div>
+        
+        <div class="form-group">
+          <label for="input-twilio-auth-token">Auth Token</label>
+          <input type="password" id="input-twilio-auth-token" placeholder="Insira seu Auth Token do Twilio">
+          <p style="font-size: 0.75rem; color: #718096; margin-top: 0.25rem;">Encontre no painel do Twilio</p>
+        </div>
+        
+        <div class="form-group">
+          <label for="input-twilio-messaging-sid">Messaging Service SID</label>
+          <input type="text" id="input-twilio-messaging-sid" value="MGdc575dfcf84eda48f35894d9cdc0c653" readonly style="background: #f7fafc;">
+        </div>
+        
+        <div class="form-group">
+          <label for="input-twilio-from-number">Número Remetente (opcional)</label>
+          <input type="text" id="input-twilio-from-number" placeholder="Ex: +18777804236">
+        </div>
+        
+        <div style="display: flex; gap: 0.5rem; margin-top: 1rem;">
+          <button class="btn btn-primary" onclick="testarConexaoTwilio()" style="flex: 1;">🧪 Testar Conexão</button>
+          <button class="btn btn-success" onclick="salvarConfigTwilio()" style="flex: 1;">💾 Salvar Configuração</button>
+        </div>
+        
+        <div id="teste-resultado" style="margin-top: 1rem; display: none;"></div>
+      </div>
+    </div>
+  </div>
+
   <script>
-    // O JavaScript COMPLETO do código anterior permanece aqui
-    // (Todo o código JavaScript que já estava funcionando)
-    
     const STORAGE_KEY = 'dividas_a_receber';
+    const TWILIO_CONFIG_KEY = 'twilio_config';
+    
     let dividas = [];
     let editingId = null;
     let filtroAtual = 'todos';
+    
+    // Configuração da API Twilio
+    let twilioConfig = {
+      accountSid: 'ACc39e5da2c6614d474a81d752a0207645',
+      authToken: '', // Será preenchido pelo usuário
+      messagingServiceSid: 'MGdc575dfcf84eda48f35894d9cdc0c653',
+      fromNumber: '+18777804236',
+      enabled: false // Inicialmente desativado até configurar
+    };
 
     // Inicializar
     document.addEventListener('DOMContentLoaded', function() {
       carregarDividas();
+      carregarConfigTwilio();
       definirDataAtual();
       
       const form = document.getElementById('form-devedor');
       form.addEventListener('submit', handleSubmit);
     });
 
-    // Funções principais
+    // Função para carregar configuração do Twilio
+    function carregarConfigTwilio() {
+      const configSalva = localStorage.getItem(TWILIO_CONFIG_KEY);
+      if (configSalva) {
+        const config = JSON.parse(configSalva);
+        twilioConfig = { ...twilioConfig, ...config };
+        
+        // Atualizar campos no modal de configuração se existirem
+        if (document.getElementById('input-twilio-auth-token')) {
+          document.getElementById('input-twilio-auth-token').value = twilioConfig.authToken || '';
+        }
+        if (document.getElementById('input-twilio-from-number')) {
+          document.getElementById('input-twilio-from-number').value = twilioConfig.fromNumber || '';
+        }
+        
+        console.log('Configuração Twilio carregada:', twilioConfig.enabled ? 'Ativa' : 'Inativa');
+      }
+    }
+
+    // Função para salvar configuração do Twilio
+    function salvarConfigTwilio() {
+      const authToken = document.getElementById('input-twilio-auth-token').value.trim();
+      const fromNumber = document.getElementById('input-twilio-from-number').value.trim();
+      
+      if (!authToken) {
+        showToast("Por favor, insira o Auth Token do Twilio", 'warning');
+        return;
+      }
+      
+      twilioConfig.authToken = authToken;
+      if (fromNumber) twilioConfig.fromNumber = fromNumber;
+      twilioConfig.enabled = true;
+      
+      localStorage.setItem(TWILIO_CONFIG_KEY, JSON.stringify(twilioConfig));
+      showToast("Configuração Twilio salva com sucesso!", 'success');
+      
+      // Atualizar status
+      document.getElementById('api-status').textContent = 'Configurada ✓';
+      document.getElementById('api-status').style.color = '#48bb78';
+      
+      // Fechar modal após 1.5 segundos
+      setTimeout(() => {
+        fecharModal();
+      }, 1500);
+    }
+
+    // Função para testar conexão com Twilio
+    async function testarConexaoTwilio() {
+      const authToken = document.getElementById('input-twilio-auth-token').value.trim();
+      
+      if (!authToken) {
+        showToast("Insira o Auth Token para testar", 'warning');
+        return;
+      }
+      
+      const btnTestar = document.querySelector('#modal-config-twilio button[onclick="testarConexaoTwilio()"]');
+      const originalText = btnTestar.innerHTML;
+      btnTestar.disabled = true;
+      btnTestar.innerHTML = '<span class="loading-spinner"></span> Testando...';
+      
+      const resultadoDiv = document.getElementById('teste-resultado');
+      resultadoDiv.style.display = 'block';
+      resultadoDiv.innerHTML = '<div style="background: #f7fafc; padding: 0.75rem; border-radius: 8px; border-left: 4px solid #ed8936;">Testando conexão com Twilio...</div>';
+      
+      try {
+        // Teste simples - verificar se podemos fazer uma requisição autenticada
+        const response = await fetch(`https://api.twilio.com/2010-04-01/Accounts/${twilioConfig.accountSid}.json`, {
+          headers: {
+            'Authorization': 'Basic ' + btoa(`${twilioConfig.accountSid}:${authToken}`)
+          }
+        });
+        
+        if (response.ok) {
+          resultadoDiv.innerHTML = `
+            <div style="background: #f0fff4; padding: 0.75rem; border-radius: 8px; border-left: 4px solid #48bb78;">
+              <p style="margin: 0 0 0.5rem 0; font-weight: 600; color: #22543d;">✅ Conexão bem-sucedida!</p>
+              <p style="margin: 0; font-size: 0.875rem; color: #38a169;">API Twilio conectada com sucesso. Você pode enviar SMS.</p>
+            </div>
+          `;
+        } else {
+          resultadoDiv.innerHTML = `
+            <div style="background: #fff5f5; padding: 0.75rem; border-radius: 8px; border-left: 4px solid #f56565;">
+              <p style="margin: 0 0 0.5rem 0; font-weight: 600; color: #c53030;">❌ Erro na autenticação</p>
+              <p style="margin: 0; font-size: 0.875rem; color: #e53e3e;">Verifique suas credenciais do Twilio.</p>
+            </div>
+          `;
+        }
+      } catch (error) {
+        resultadoDiv.innerHTML = `
+          <div style="background: #fff5f5; padding: 0.75rem; border-radius: 8px; border-left: 4px solid #f56565;">
+            <p style="margin: 0 0 0.5rem 0; font-weight: 600; color: #c53030;">❌ Erro de conexão</p>
+            <p style="margin: 0; font-size: 0.875rem; color: #e53e3e;">${error.message}</p>
+          </div>
+        `;
+      } finally {
+        btnTestar.disabled = false;
+        btnTestar.innerHTML = originalText;
+      }
+    }
+
+    // Abrir modal de configuração do Twilio
+    function abrirConfigTwilio() {
+      document.getElementById('input-twilio-auth-token').value = twilioConfig.authToken || '';
+      document.getElementById('input-twilio-from-number').value = twilioConfig.fromNumber || '';
+      document.getElementById('teste-resultado').style.display = 'none';
+      
+      // Atualizar status
+      const statusEl = document.getElementById('api-status');
+      if (twilioConfig.enabled && twilioConfig.authToken) {
+        statusEl.textContent = 'Configurada ✓';
+        statusEl.style.color = '#48bb78';
+      } else {
+        statusEl.textContent = 'Não configurada';
+        statusEl.style.color = '#f56565';
+      }
+      
+      abrirModal('modal-config-twilio');
+    }
+
+    // Funções principais (mantidas do código anterior)
     function carregarDividas() {
       const dados = localStorage.getItem(STORAGE_KEY);
       dividas = dados ? JSON.parse(dados) : [];
-      console.log('Dívidas carregadas:', dividas);
       atualizarInterface();
     }
 
     function salvarDividas() {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(dividas));
-      console.log('Dívidas salvas:', dividas);
       atualizarInterface();
     }
 
@@ -970,9 +1137,18 @@
       document.getElementById('footer-total').textContent = `MT ${totalPendente.toFixed(2).replace('.', ',')}`;
       document.getElementById('footer-devedores').textContent = devedoresPendentes;
       document.getElementById('footer-atrasadas').textContent = devedoresAtrasados;
+      
+      // Adicionar botão de configuração da API no footer
+      const footerStats = document.querySelector('.footer-stats');
+      if (!document.querySelector('.footer-stat-config')) {
+        const configBtn = document.createElement('span');
+        configBtn.className = 'footer-stat footer-stat-config';
+        configBtn.innerHTML = `<span style="cursor: pointer;" onclick="abrirConfigTwilio()">⚙️ API</span>`;
+        footerStats.appendChild(configBtn);
+      }
     }
 
-    // Funções do formulário
+    // Funções do formulário (mantidas do código anterior)
     async function handleSubmit(e) {
       e.preventDefault();
 
@@ -1038,7 +1214,7 @@
       }
     }
 
-    // Funções de ação
+    // Funções de ação (mantidas do código anterior)
     function marcarComoRecebido(id) {
       const divida = dividas.find(d => d.id === id);
       if (divida) {
@@ -1098,7 +1274,7 @@
       showToast(`Dívida removida!`, 'success');
     }
 
-    // Funções de cobrança COM SMS
+    // FUNÇÃO DE COBRANÇA ATUALIZADA COM TWILIO
     function enviarCobranca(id) {
       const divida = dividas.find(d => d.id === id);
       if (!divida) return;
@@ -1133,11 +1309,17 @@
 
       document.getElementById('modal-cobranca-titulo').textContent = `📧 Cobrar ${divida.nome}`;
       
-      // HTML do modal de cobrança com opção de SMS
+      // Verificar status da API Twilio
+      let apiStatus = '';
+      if (!twilioConfig.enabled || !twilioConfig.authToken) {
+        apiStatus = `<p style="color: #f56565; font-size: 0.75rem; margin-top: 0.5rem;">⚠️ API Twilio não configurada. <a href="javascript:abrirConfigTwilio()" style="color: #4299e1; text-decoration: underline;">Configurar agora</a></p>`;
+      }
+      
       document.getElementById('modal-cobranca-body').innerHTML = `
         <div style="margin-bottom: 1rem;">
           <p><strong>Devedor:</strong> ${divida.nome}</p>
           <p><strong>Telefone:</strong> ${divida.telefone || '<span style="color: #718096;">(não cadastrado)</span>'}</p>
+          ${twilioConfig.enabled ? '<p style="color: #48bb78; font-size: 0.75rem;">✅ API Twilio configurada</p>' : ''}
         </div>
         <div style="background: #f7fafc; padding: 1rem; border-radius: 8px; margin-bottom: 1rem;">
           <p><strong>Mensagem pronta:</strong></p>
@@ -1147,18 +1329,103 @@
         <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 0.5rem;">
           <button class="btn btn-info" onclick="copiarMensagemCobranca()">📋 Copiar</button>
           <button class="btn btn-success" onclick="enviarPorWhatsAppCobranca()" ${!divida.telefone ? 'disabled style="opacity:0.5"' : ''}>📱 WhatsApp</button>
-          <button class="btn btn-primary" onclick="enviarPorSmsCobranca()" ${!divida.telefone ? 'disabled style="opacity:0.5"' : ''}>📲 SMS Direto</button>
+          <button class="btn btn-primary" onclick="enviarPorSmsCobranca()" ${!divida.telefone || !twilioConfig.enabled ? 'disabled style="opacity:0.5"' : ''}>📲 SMS Twilio</button>
           <button class="btn" onclick="enviarPorEmailCobranca()" style="background: #ed8936; color: white;">✉️ Email</button>
+        </div>
+        <div style="margin-top: 0.5rem; display: flex; justify-content: center;">
+          <button class="btn btn-small" onclick="abrirConfigTwilio()" style="background: #4a5568; color: white; font-size: 0.7rem;">⚙️ Configurar API</button>
         </div>
         <div id="mensagem-copiada" style="display: none; color: #48bb78; font-size: 0.75rem; margin-top: 0.5rem;">
           ✓ Mensagem copiada!
         </div>
+        ${apiStatus}
         ${!divida.telefone ? '<p style="color: #f56565; font-size: 0.75rem; margin-top: 0.5rem;">⚠️ Cadastre um número de telefone para enviar SMS/WhatsApp</p>' : ''}
       `;
 
       abrirModal('modal-cobranca');
     }
 
+    // FUNÇÃO ATUALIZADA: Enviar SMS via Twilio
+    async function enviarPorSmsCobranca() {
+      const divida = window.dividaCobrancaAtual;
+      const mensagem = document.getElementById('mensagem-cobranca').value;
+      
+      if (!divida.telefone) {
+        showToast(`Número de telefone não cadastrado para ${divida.nome}.`, 'warning');
+        return;
+      }
+      
+      if (!twilioConfig.enabled || !twilioConfig.authToken) {
+        showToast("API Twilio não configurada. Configure primeiro.", 'warning');
+        abrirConfigTwilio();
+        return;
+      }
+
+      const btnSms = document.querySelector('#modal-cobranca-body button[onclick="enviarPorSmsCobranca()"]');
+      const originalText = btnSms.innerHTML;
+      btnSms.disabled = true;
+      btnSms.innerHTML = '<span class="loading-spinner" style="border-top-color: white;"></span>';
+
+      try {
+        // Preparar os dados para a API Twilio
+        const formData = new URLSearchParams();
+        formData.append('To', divida.telefone);
+        formData.append('MessagingServiceSid', twilioConfig.messagingServiceSid);
+        formData.append('Body', mensagem);
+        
+        // Adicionar número remetente se especificado
+        if (twilioConfig.fromNumber) {
+          formData.append('From', twilioConfig.fromNumber);
+        }
+        
+        // Criar autenticação Basic
+        const authString = btoa(`${twilioConfig.accountSid}:${twilioConfig.authToken}`);
+        
+        // URL da API Twilio
+        const apiUrl = `https://api.twilio.com/2010-04-01/Accounts/${twilioConfig.accountSid}/Messages.json`;
+        
+        // Fazer a requisição
+        const response = await fetch(apiUrl, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Basic ${authString}`,
+            'Content-Type': 'application/x-www-form-urlencoded'
+          },
+          body: formData
+        });
+        
+        const resultado = await response.json();
+        
+        if (response.ok) {
+          showToast(`✅ SMS enviado para ${divida.nome}! (ID: ${resultado.sid})`, 'success');
+          
+          // Registrar o envio no histórico
+          if (!divida.historicoCobrancas) {
+            divida.historicoCobrancas = [];
+          }
+          divida.historicoCobrancas.push({
+            data: new Date().toISOString(),
+            tipo: 'sms',
+            mensagem: mensagem.substring(0, 100) + '...',
+            status: 'enviado'
+          });
+          
+          salvarDividas();
+          fecharModal();
+        } else {
+          console.error('Erro Twilio:', resultado);
+          showToast(`Erro ao enviar SMS: ${resultado.message || 'Erro desconhecido'}`, 'danger');
+        }
+      } catch (error) {
+        console.error('Erro:', error);
+        showToast(`Erro: ${error.message}`, 'danger');
+      } finally {
+        btnSms.disabled = false;
+        btnSms.innerHTML = originalText;
+      }
+    }
+
+    // Outras funções auxiliares (mantidas do código anterior)
     function copiarMensagemCobranca() {
       const textarea = document.getElementById('mensagem-cobranca');
       textarea.select();
@@ -1189,54 +1456,6 @@
       fecharModal();
     }
 
-    // NOVA FUNÇÃO: Enviar por SMS (requer API configurada)
-    async function enviarPorSmsCobranca() {
-      const divida = window.dividaCobrancaAtual;
-      const mensagem = document.getElementById('mensagem-cobranca').value;
-      
-      if (!divida.telefone) {
-        showToast(`Número de telefone não cadastrado para ${divida.nome}.`, 'warning');
-        return;
-      }
-
-      // SIMULAÇÃO - Para implementação real, precisa de API de SMS
-      showToast(`📲 Preparando SMS para ${divida.nome}...`, 'info');
-      
-      // Aqui você implementaria a chamada à API de SMS
-      // Exemplo com fetch:
-      /*
-      try {
-        const response = await fetch('SUA_API_DE_SMS_AQUI', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            to: divida.telefone,
-            message: mensagem,
-            apiKey: 'SUA_CHAVE_API'
-          })
-        });
-        
-        if (response.ok) {
-          showToast(`✅ SMS enviado para ${divida.nome}!`, 'success');
-          fecharModal();
-        } else {
-          showToast(`Erro ao enviar SMS.`, 'danger');
-        }
-      } catch (error) {
-        showToast(`Erro: ${error.message}`, 'danger');
-      }
-      */
-      
-      // Por enquanto, mostra opções alternativas
-      setTimeout(() => {
-        const confirmar = confirm(`Para enviar SMS diretamente para ${divida.telefone}:\n\n1. Você precisa de uma API de SMS (Twilio, IAGENTEsms, etc.)\n2. Configure as credenciais no código\n\nDeseja copiar a mensagem para enviar manualmente?`);
-        if (confirmar) {
-          copiarMensagemCobranca();
-        }
-      }, 500);
-    }
-
-    // Funções auxiliares
     function getNomeCategoria(codigo) {
       const categorias = {
         'emprestimo': '💰 Empréstimo',
@@ -1261,7 +1480,6 @@
     }
 
     function mostrarNotificacoes() {
-      // Verificar dívidas atrasadas
       const agora = new Date();
       let notificacoesCount = 0;
       let notificacoesHTML = '';
@@ -1295,7 +1513,6 @@
            <p style="color: #718096;">Nenhuma dívida atrasada no momento.</p>
          </div>`;
 
-      // Atualizar badge
       const badge = document.getElementById('notificacao-badge');
       if (notificacoesCount > 0) {
         badge.textContent = notificacoesCount;
@@ -1324,7 +1541,6 @@
     }
 
     function showToast(message, type = 'info') {
-      // Remover toasts antigos
       document.querySelectorAll('.toast').forEach(toast => toast.remove());
       
       const toast = document.createElement('div');
@@ -1341,20 +1557,17 @@
       }, 3000);
     }
 
-    // Fechar modal ao clicar fora
     window.addEventListener('click', (event) => {
       if (event.target.classList.contains('modal')) {
         fecharModal();
       }
     });
 
-    // Solicitar permissão para notificações
     if ('Notification' in window && Notification.permission === 'default') {
       Notification.requestPermission();
     }
 
-    // Teste inicial
-    console.log('Sistema de Dívidas carregado com sucesso!');
+    console.log('Sistema de Dívidas com Twilio carregado com sucesso!');
   </script>
  </body>
 </html>
